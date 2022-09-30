@@ -29,8 +29,6 @@ export const register = async (req, res) => {
     expiresIn: "15m",
   });
 
-  console.log(token);
-
   // Email Send
   const transport = nodemailer.createTransport({
     service: "gmail",
@@ -65,4 +63,31 @@ export const register = async (req, res) => {
   //     const savedUser = await newUser.save();
   //     return res.status(201).json({ user: savedUser });
   //   } catch (error) {}
+};
+
+export const activation = async (req, res) => {
+  const { token } = req.body;
+
+  if (!token)
+    return res.status(403).json({ message: "Please provide the token" });
+
+  const { name, email, password } = await jwt.verify(
+    token,
+    process.env.SENDMAIL_PASS
+  );
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser = new User({ name, email, password: hashedPassword });
+
+  try {
+    const user = await newUser.save();
+    return res
+      .status(201)
+      .json({ message: "User was created successfully ✔✔", user });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ message: `Error while creating a new user ${error}` });
+  }
 };
